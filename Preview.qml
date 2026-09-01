@@ -28,14 +28,14 @@ Rectangle {
     entryVisible = false
     playbackFailed = false
     player.pause()
-    player.seek(0)
+    player.position = 0
     player.play()
   }
 
   function finishIntro() {
     if (entryVisible) return
     player.pause()
-    if (player.seekable && targetEnd > 1) player.seek(targetEnd - 1)
+    if (player.seekable && targetEnd > 1) player.position = targetEnd - 1
     entryVisible = true
     introFinished()
   }

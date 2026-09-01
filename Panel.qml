@@ -207,7 +207,7 @@ Panel {
     centerOnBar: true
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(920))
-    contentHeight: panel.fittedContentHeight(actionRow.y + actionRow.height)
+    contentHeight: 580
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -216,7 +216,7 @@ Panel {
     }
 
     Column {
-      id: content
+      id: mainCol
       width: parent.width
       spacing: Style.space(10)
 
@@ -278,7 +278,7 @@ Panel {
             spacing: Style.space(6)
 
             Dropdown {
-              width: parent.width - openAssetsButton.width - refreshAssetsButton.width - parent.spacing * 2
+              width: Math.min(Style.space(280), parent.width - openAssetsButton.width - refreshAssetsButton.width - parent.spacing * 2)
               label: "Asset"
               value: root.videoPath
               options: root.assetFiles.map(function(path) {
@@ -308,6 +308,7 @@ Panel {
 
           Text {
             visible: root.assetFiles.length === 0
+            height: visible ? implicitHeight : 0
             width: parent.width
             text: "No videos found. Add one to assets, then refresh."
             color: Qt.darker(root.contentForeground, 1.45)
@@ -399,6 +400,7 @@ Panel {
 
           NumberField {
             visible: root.soundEnabled
+            height: visible ? implicitHeight : 0
             label: "Sound volume (%)"
             value: root.volumePercent
             from: 0
@@ -485,4 +487,5 @@ Panel {
       }
     }
   }
+
 }
