@@ -1,0 +1,32 @@
+#!/bin/bash
+
+build() {
+  local config=/usr/share/plymouth/themes/omaliveboot/boot.conf
+  local module
+
+  add_file "$config"
+
+  # Keep the module set hardware-specific by copying the sound modules that
+  # are active while the image is built, rather than every ALSA driver.
+  if [[ -r $config ]] && grep -q "^AUDIO_ENABLED='1'$" "$config"; then
+    add_binary aplay
+    [[ ! -x /usr/bin/alsactl ]] || add_binary alsactl
+    [[ ! -f /var/lib/alsa/asound.state ]] || add_file /var/lib/alsa/asound.state
+    add_file /usr/share/plymouth/themes/omaliveboot/intro.wav
+
+    while read -r module _; do
+      case "$module" in
+        snd* | soundwire* | soundcore) add_module "$module" ;;
+      esac
+    done </proc/modules
+  fi
+
+  add_runscript
+}
+
+help() {
+  cat <<'EOF'
+Plays the optional Luks Live PCM soundtrack and holds initramfs execution
+until the one-shot Plymouth intro reaches its final frame.
+EOF
+}
