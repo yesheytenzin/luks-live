@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
 import qs.Commons
@@ -19,7 +18,7 @@ Panel {
   readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || home + "/.config"
   readonly property string pluginDir: configHome + "/omarchy/plugins/tenzin.luks-live"
   readonly property string assetDir: pluginDir + "/assets"
-  readonly property string importScript: pluginDir + "/scripts/import-asset.sh"
+  readonly property string listAssetsScript: pluginDir + "/scripts/list-assets.sh"
   readonly property string prepareScript: pluginDir + "/scripts/prepare.sh"
   readonly property string installScript: pluginDir + "/scripts/install.sh"
   readonly property string statusScript: pluginDir + "/scripts/status.sh"
@@ -40,8 +39,8 @@ Panel {
   property string activeTheme: "unknown"
   property string audioDevice: "checking"
   property string phase: "idle"
-  property string logText: "Choose a short clip, inspect the final-frame preview, then apply."
-  property string importedPath: ""
+  property string logText: "Add videos to assets, select one, inspect the final frame, then apply."
+  property var assetFiles: []
 
   function persist(values) {
     var entry = { id: root.moduleName }
@@ -53,13 +52,8 @@ Panel {
       root.bar.shell.updateEntryInline(root.moduleName, entry)
   }
 
-  function localPath(url) {
-    var value = String(url)
-    if (value.indexOf("file://") === 0) value = value.substring(7)
-    return decodeURIComponent(value)
-  }
-
   function open() {
+    refreshAssets()
     refreshStatus()
     controller.show()
     Qt.callLater(function() {
@@ -84,13 +78,15 @@ Panel {
     preview.replay()
   }
 
-  function importVideo(path) {
-    busy = true
-    phase = "importing"
-    importedPath = ""
-    logText = "Copying the live wallpaper into the plugin assets folder..."
-    importProc.command = [importScript, path]
-    importProc.running = true
+  function assetName(path) {
+    var parts = String(path).split("/")
+    return parts.length > 0 ? parts[parts.length - 1] : String(path)
+  }
+
+  function refreshAssets() {
+    if (assetsProc.running) return
+    assetFiles = []
+    assetsProc.running = true
   }
 
   function refreshStatus() {
@@ -98,8 +94,8 @@ Panel {
   }
 
   function apply() {
-    if (videoPath === "") {
-      logText = "Select a video before applying."
+    if (videoPath === "" || assetFiles.indexOf(videoPath) < 0) {
+      logText = "Select a video from the assets folder before applying."
       return
     }
     busy = true
@@ -118,32 +114,21 @@ Panel {
     installProc.running = true
   }
 
-  FileDialog {
-    id: videoDialog
-    title: "Import a live wallpaper"
-    fileMode: FileDialog.OpenFile
-    nameFilters: ["Videos (*.mp4 *.webm *.mkv *.mov *.m4v)", "All files (*)"]
-    onAccepted: root.importVideo(root.localPath(selectedFile))
-  }
-
   Process {
-    id: importProc
+    id: assetsProc
+    command: [root.listAssetsScript]
     stdout: StdioCollector {
       waitForEnd: true
-      onStreamFinished: root.importedPath = String(text || "").trim()
-    }
-    stderr: StdioCollector {
-      waitForEnd: true
-      onStreamFinished: if (String(text || "").trim() !== "") root.logText = String(text).trim()
-    }
-    onExited: function(exitCode, exitStatus) {
-      root.busy = false
-      if (exitCode === 0 && root.importedPath !== "") {
-        root.phase = "complete"
-        root.logText = "Live wallpaper added to assets."
-        root.selectVideo(root.importedPath)
-      } else {
-        root.phase = "error"
+      onStreamFinished: {
+        var output = String(text || "").trim()
+        var paths = output === "" ? [] : output.split("\n")
+        root.assetFiles = paths
+
+        if (paths.indexOf(root.videoPath) < 0) {
+          root.videoPath = paths.length > 0 ? paths[0] : ""
+          root.persist({ videoPath: root.videoPath })
+        }
+        if (root.videoPath !== "") preview.replay()
       }
     }
   }
@@ -288,6 +273,36 @@ Panel {
           width: Math.floor((parent.width - parent.spacing) * 0.62)
           spacing: Style.space(8)
 
+          PanelSectionHeader { width: parent.width; text: "Asset library" }
+
+          Flow {
+            width: parent.width
+            spacing: Style.space(4)
+            visible: root.assetFiles.length > 0
+
+            Repeater {
+              model: root.assetFiles
+              Button {
+                required property string modelData
+                text: root.assetName(modelData)
+                selected: root.videoPath === modelData
+                bordered: true
+                foreground: root.contentForeground
+                onClicked: root.selectVideo(modelData)
+              }
+            }
+          }
+
+          Text {
+            visible: root.assetFiles.length === 0
+            width: parent.width
+            text: "No videos found. Open assets, add a video manually, then refresh."
+            wrapMode: Text.WordWrap
+            color: Qt.darker(root.contentForeground, 1.45)
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.bodySmall
+          }
+
           Preview {
             id: preview
             width: parent.width
@@ -303,18 +318,18 @@ Panel {
           Row {
             spacing: Style.space(6)
             Button {
-              text: root.videoPath === "" ? "Import video" : "Change video"
-              enabled: !root.busy
-              bordered: true
-              foreground: root.contentForeground
-              onClicked: videoDialog.open()
-            }
-            Button {
               text: "Open assets"
               enabled: !root.busy
               bordered: true
               foreground: root.contentForeground
               onClicked: openAssetsProc.running = true
+            }
+            Button {
+              text: "Refresh"
+              enabled: !root.busy && !assetsProc.running
+              bordered: true
+              foreground: root.contentForeground
+              onClicked: root.refreshAssets()
             }
             Button {
               text: "Replay preview"
@@ -444,7 +459,7 @@ Panel {
         Button {
           id: applyButton
           text: root.busy
-            ? (root.phase === "importing" ? "Importing..." : (root.phase === "preparing" ? "Preparing..." : "Rebuilding UKI..."))
+            ? (root.phase === "preparing" ? "Preparing..." : "Rebuilding UKI...")
             : "Apply to next boot"
           enabled: !root.busy && root.videoPath !== ""
           active: true
