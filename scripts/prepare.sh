@@ -59,7 +59,7 @@ frames=("$staging_dir"/frames/*.png)
 frame_count=${#frames[@]}
 (( frame_count > 0 && frame_count <= 200 )) || { echo "Frame extraction produced an invalid frame count: $frame_count" >&2; exit 1; }
 
-intro_duration=$(awk -v frames="$frame_count" -v rate="$fps" 'BEGIN { printf "%.3f", frames / rate + 0.10 }')
+intro_duration=$duration_seconds
 audio_enabled=0
 audio_device=
 

@@ -387,32 +387,26 @@ Panel {
 
           PanelSectionHeader { width: parent.width; text: "Boot sequence" }
 
-          Row {
-            spacing: Style.space(10)
-            NumberField {
-              label: "Length (ms)"
-              value: root.durationMs
-              from: 1000
-              to: 10000
-              stepSize: 250
-              foreground: root.contentForeground
-              onModified: function(value) {
-                root.durationMs = value
-                root.persist({ durationMs: value })
-                preview.replay()
-              }
+          NumberField {
+            width: parent.width
+            label: "Length (ms)"
+            value: root.durationMs
+            from: 1000
+            to: 10000
+            stepSize: 250
+            foreground: root.contentForeground
+            onModified: function(value) {
+              root.durationMs = value
+              root.persist({ durationMs: value })
+              preview.replay()
             }
-            NumberField {
-              label: "Frames / sec"
-              value: root.frameRate
-              from: 8
-              to: 20
-              foreground: root.contentForeground
-              onModified: function(value) {
-                root.frameRate = value
-                root.persist({ frameRate: value })
-              }
-            }
+          }
+          Text {
+            width: parent.width
+            text: root.videoPath === "" ? "FPS: auto (from video)" : "FPS: " + root.frameRate + " (auto from video)"
+            color: Qt.darker(root.contentForeground, 1.45)
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.caption
           }
 
           Toggle {
