@@ -25,7 +25,7 @@ mkinitcpio encryption hook remains responsible for unlocking the disk.
 - Plugin-owned `assets/` library for manually managed live wallpapers
 - One-shot playback that freezes on the last generated frame
 - Real Omarchy lock, entry, bullet, and progress assets in preview and Plymouth
-- Configurable 1-5 second length and 8-20 FPS
+- Configurable 1-10 second length and 8-20 FPS
 - Nine password-field positions
 - Optional built-in-speaker PCM soundtrack with a volume setting
 - Silent fallback when early-boot audio is unavailable

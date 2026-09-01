@@ -20,7 +20,7 @@ audio_requested=$8
 volume_percent=$9
 
 [[ -f $source_video && ! -L $source_video ]] || { echo "Video is not a regular file: $source_video" >&2; exit 1; }
-[[ $duration_ms =~ ^[0-9]+$ ]] && (( duration_ms >= 1000 && duration_ms <= 5000 )) || { echo "Duration must be 1000-5000 ms" >&2; exit 1; }
+[[ $duration_ms =~ ^[0-9]+$ ]] && (( duration_ms >= 1000 && duration_ms <= 10000 )) || { echo "Duration must be 1000-10000 ms" >&2; exit 1; }
 [[ $fps =~ ^[0-9]+$ ]] && (( fps >= 8 && fps <= 20 )) || { echo "FPS must be 8-20" >&2; exit 1; }
 [[ $width =~ ^[0-9]+$ ]] && (( width >= 640 && width <= 1920 )) || { echo "Width must be 640-1920" >&2; exit 1; }
 [[ $height =~ ^[0-9]+$ ]] && (( height >= 360 && height <= 1080 )) || { echo "Height must be 360-1080" >&2; exit 1; }
@@ -57,7 +57,7 @@ ffmpeg -hide_banner -loglevel error -y -i "$source_video" \
 shopt -s nullglob
 frames=("$staging_dir"/frames/*.png)
 frame_count=${#frames[@]}
-(( frame_count > 0 && frame_count <= 100 )) || { echo "Frame extraction produced an invalid frame count: $frame_count" >&2; exit 1; }
+(( frame_count > 0 && frame_count <= 200 )) || { echo "Frame extraction produced an invalid frame count: $frame_count" >&2; exit 1; }
 
 intro_duration=$(awk -v frames="$frame_count" -v rate="$fps" 'BEGIN { printf "%.3f", frames / rate + 0.10 }')
 audio_enabled=0

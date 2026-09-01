@@ -278,6 +278,7 @@ Panel {
             spacing: Style.space(6)
 
             Dropdown {
+              id: assetDropdown
               width: Math.min(Style.space(280), parent.width - openAssetsButton.width - refreshAssetsButton.width - parent.spacing * 2)
               label: "Asset"
               value: root.videoPath
@@ -294,6 +295,7 @@ Panel {
               enabled: !root.busy
               bordered: true
               foreground: root.contentForeground
+              anchors.bottom: parent.bottom
               onClicked: openAssetsProc.running = true
             }
             Button {
@@ -302,6 +304,7 @@ Panel {
               enabled: !root.busy && !assetsProc.running
               bordered: true
               foreground: root.contentForeground
+              anchors.bottom: parent.bottom
               onClicked: root.refreshAssets()
             }
           }
@@ -361,7 +364,7 @@ Panel {
               label: "Length (ms)"
               value: root.durationMs
               from: 1000
-              to: 5000
+              to: 10000
               stepSize: 250
               foreground: root.contentForeground
               onModified: function(value) {
