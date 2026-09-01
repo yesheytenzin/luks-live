@@ -207,7 +207,7 @@ Panel {
     centerOnBar: true
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(920))
-    contentHeight: 580
+    contentHeight: 580 + (root.phase !== "idle" && root.logText !== "" ? 80 : 0)
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -480,8 +480,9 @@ Panel {
         }
         Text {
           width: parent.width - applyButton.width - revertButton.width - parent.spacing * 2
-          anchors.verticalCenter: parent.verticalCenter
           text: root.logText
+          wrapMode: Text.WordWrap
+          maximumLineCount: 6
           elide: Text.ElideRight
           color: root.phase === "error" ? "#f7768e" : Qt.darker(root.contentForeground, 1.35)
           font.family: root.contentFontFamily
