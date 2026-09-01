@@ -273,34 +273,46 @@ Panel {
           width: Math.floor((parent.width - parent.spacing) * 0.62)
           spacing: Style.space(8)
 
-          PanelSectionHeader { width: parent.width; text: "Asset library" }
-
-          Flow {
+          Row {
             width: parent.width
-            spacing: Style.space(4)
-            visible: root.assetFiles.length > 0
+            spacing: Style.space(6)
 
-            Repeater {
-              model: root.assetFiles
-              Button {
-                required property string modelData
-                text: root.assetName(modelData)
-                selected: root.videoPath === modelData
-                bordered: true
-                foreground: root.contentForeground
-                onClicked: root.selectVideo(modelData)
-              }
+            Dropdown {
+              width: parent.width - openAssetsButton.width - refreshAssetsButton.width - parent.spacing * 2
+              label: "Asset"
+              value: root.videoPath
+              options: root.assetFiles.map(function(path) {
+                return { value: path, label: root.assetName(path) }
+              })
+              foreground: root.contentForeground
+              fontFamily: root.contentFontFamily
+              onChanged: function(value) { root.selectVideo(value) }
+            }
+            Button {
+              id: openAssetsButton
+              text: "Open assets"
+              enabled: !root.busy
+              bordered: true
+              foreground: root.contentForeground
+              onClicked: openAssetsProc.running = true
+            }
+            Button {
+              id: refreshAssetsButton
+              text: "Refresh"
+              enabled: !root.busy && !assetsProc.running
+              bordered: true
+              foreground: root.contentForeground
+              onClicked: root.refreshAssets()
             }
           }
 
           Text {
             visible: root.assetFiles.length === 0
             width: parent.width
-            text: "No videos found. Open assets, add a video manually, then refresh."
-            wrapMode: Text.WordWrap
+            text: "No videos found. Add one to assets, then refresh."
             color: Qt.darker(root.contentForeground, 1.45)
             font.family: root.contentFontFamily
-            font.pixelSize: Style.font.bodySmall
+            font.pixelSize: Style.font.caption
           }
 
           Preview {
@@ -317,20 +329,6 @@ Panel {
 
           Row {
             spacing: Style.space(6)
-            Button {
-              text: "Open assets"
-              enabled: !root.busy
-              bordered: true
-              foreground: root.contentForeground
-              onClicked: openAssetsProc.running = true
-            }
-            Button {
-              text: "Refresh"
-              enabled: !root.busy && !assetsProc.running
-              bordered: true
-              foreground: root.contentForeground
-              onClicked: root.refreshAssets()
-            }
             Button {
               text: "Replay preview"
               enabled: !root.busy && root.videoPath !== ""
