@@ -22,6 +22,7 @@ Panel {
   readonly property string prepareScript: pluginDir + "/scripts/prepare.sh"
   readonly property string installScript: pluginDir + "/scripts/install.sh"
   readonly property string statusScript: pluginDir + "/scripts/status.sh"
+  readonly property string getFpsScript: pluginDir + "/scripts/get-fps.sh"
   readonly property string preparedDir: (Quickshell.env("XDG_CACHE_HOME") || home + "/.cache") + "/omaliveboot/prepared"
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
@@ -76,6 +77,19 @@ Panel {
     videoPath = path
     persist({ videoPath: path })
     preview.replay()
+    probeFps(path)
+  }
+
+  function probeFps(path) {
+    if (!path || fpsProc.running) return
+    fpsProc.command = [getFpsScript, path]
+    fpsProc.running = true
+  }
+
+  onVideoPathChanged: {
+    if (videoPath !== "" && assetFiles.indexOf(videoPath) >= 0) {
+      Qt.callLater(function() { probeFps(videoPath) })
+    }
   }
 
   function assetName(path) {
@@ -129,6 +143,21 @@ Panel {
           root.persist({ videoPath: root.videoPath })
         }
         if (root.videoPath !== "") preview.replay()
+      }
+    }
+  }
+
+  Process {
+    id: fpsProc
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        var raw = String(text || "").trim()
+        var fps = parseInt(raw, 10)
+        if (!isNaN(fps) && fps >= 8 && fps <= 20 && fps !== root.frameRate) {
+          root.frameRate = fps
+          root.persist({ frameRate: fps })
+        }
       }
     }
   }
