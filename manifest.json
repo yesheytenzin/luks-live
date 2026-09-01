@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "tenzin.luks-live",
+  "name": "Luks Live",
+  "version": "0.2.0",
+  "author": "tenzin",
+  "description": "Preview and install a one-shot audiovisual Plymouth intro before the Omarchy LUKS password prompt.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "LUKS Live Boot",
+    "description": "Manage the audiovisual pre-LUKS boot intro",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

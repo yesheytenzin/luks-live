@@ -1,0 +1,11 @@
+[Plymouth Theme]
+Name=Luks Live
+Description=One-shot animated LUKS unlock screen for Omarchy.
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/omaliveboot
+ScriptFile=/usr/share/plymouth/themes/omaliveboot/omaliveboot.script
+ConsoleLogBackgroundColor=0x000000
+MonospaceFont=Cantarell 11
+Font=Cantarell 11

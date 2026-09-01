@@ -1,0 +1,27 @@
+#!/usr/bin/ash
+
+run_hook() {
+  local audio_pid=
+
+  [ -r /usr/share/plymouth/themes/omaliveboot/boot.conf ] || return 0
+  . /usr/share/plymouth/themes/omaliveboot/boot.conf
+
+  command -v plymouth >/dev/null 2>&1 || return 0
+  plymouth --ping >/dev/null 2>&1 || return 0
+
+  if [ "${AUDIO_ENABLED:-0}" = 1 ] && command -v aplay >/dev/null 2>&1; then
+    modprobe -a snd_hda_intel snd_sof_pci_intel_tgl >/dev/null 2>&1 || true
+    if command -v alsactl >/dev/null 2>&1 && [ -r /var/lib/alsa/asound.state ]; then
+      alsactl -f /var/lib/alsa/asound.state restore >/dev/null 2>&1 || true
+    fi
+    aplay -q -D "${AUDIO_DEVICE}" /usr/share/plymouth/themes/omaliveboot/intro.wav >/dev/null 2>&1 &
+    audio_pid=$!
+  fi
+
+  sleep "${INTRO_DURATION}"
+
+  if [ -n "$audio_pid" ] && kill -0 "$audio_pid" >/dev/null 2>&1; then
+    kill "$audio_pid" >/dev/null 2>&1 || true
+  fi
+  [ -z "$audio_pid" ] || wait "$audio_pid" 2>/dev/null || true
+}
