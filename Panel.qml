@@ -207,7 +207,7 @@ Panel {
     centerOnBar: true
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(920))
-    contentHeight: panel.fittedContentHeight(content.implicitHeight)
+    contentHeight: panel.fittedContentHeight(actionRow.y + actionRow.height)
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -452,6 +452,7 @@ Panel {
       PanelSeparator { foreground: root.contentForeground }
 
       Row {
+        id: actionRow
         width: parent.width
         spacing: Style.space(8)
         Button {
