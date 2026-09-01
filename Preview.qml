@@ -18,24 +18,26 @@ Rectangle {
 
   signal introFinished()
 
-  readonly property int targetEnd: player.duration > 0
-    ? Math.min(player.duration, introDurationMs)
-    : introDurationMs
+  readonly property int targetEnd: introDurationMs
   readonly property real scaleFactor: width / 1920
 
   function replay() {
     if (videoPath === "") return
     entryVisible = false
     playbackFailed = false
+    durationTimer.stop()
     player.pause()
     player.position = 0
     player.play()
+    if (targetEnd > 0) durationTimer.restart()
   }
 
   function finishIntro() {
     if (entryVisible) return
+    durationTimer.stop()
     player.pause()
-    if (player.seekable && targetEnd > 1) player.position = targetEnd - 1
+    if (player.seekable && targetEnd > 1 && player.duration > 0 && targetEnd <= player.duration) player.position = targetEnd - 1
+    else if (player.seekable && player.duration > 0) player.position = Math.min(player.duration - 1, targetEnd - 1)
     entryVisible = true
     introFinished()
   }
@@ -50,8 +52,8 @@ Rectangle {
   }
 
   onActiveChanged: {
-    if (!active) player.pause()
-    else if (videoPath !== "" && !entryVisible) player.play()
+    if (!active) { player.pause(); durationTimer.stop() }
+    else if (videoPath !== "" && !entryVisible) { player.play(); if (targetEnd>0) durationTimer.restart() }
   }
 
   implicitHeight: Math.round(width * 9 / 16)
@@ -80,8 +82,17 @@ Rectangle {
         root.finishIntro()
     }
     onMediaStatusChanged: function(status) {
-      if (status === MediaPlayer.EndOfMedia) root.finishIntro()
-      else if (status === MediaPlayer.InvalidMedia) {
+      if (status === MediaPlayer.EndOfMedia) {
+        // For short source (< duration) hold last frame until introDurationMs instead of finishing early
+        // Keep last frame visible and wait for targetEnd timer
+        if (root.targetEnd > player.duration + 100) {
+          if (player.seekable && player.duration > 0) player.position = player.duration - 1
+          player.pause()
+          // finish at targetEnd via timer, not immediately
+        } else {
+          root.finishIntro()
+        }
+      } else if (status === MediaPlayer.InvalidMedia) {
         root.playbackFailed = true
         root.entryVisible = true
       }
@@ -91,6 +102,13 @@ Rectangle {
       root.playbackFailed = true
       root.entryVisible = true
     }
+  }
+
+  Timer {
+    id: durationTimer
+    interval: root.targetEnd
+    repeat: false
+    onTriggered: root.finishIntro()
   }
 
   Connections {

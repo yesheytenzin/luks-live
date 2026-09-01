@@ -153,6 +153,7 @@ apply_theme() {
   sed -i \
     -e "s/@FRAME_COUNT@/$frame_count/g" \
     -e "s/@INTRO_DURATION@/$duration/g" \
+    -e "s/@FPS@/20/g" \
     -e "s/@ENTRY_X@/$entry_x/g" \
     -e "s/@ENTRY_Y@/$entry_y/g" \
     "$stage/omaliveboot.script"
