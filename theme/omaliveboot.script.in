@@ -4,9 +4,11 @@ Window.SetBackgroundTopColor(0, 0, 0);
 Window.SetBackgroundBottomColor(0, 0, 0);
 
 global.frame_count = @FRAME_COUNT@;
-global.frame_index = 1;
+global.duration = @INTRO_DURATION@;
+global.frame_index = 0;
 global.intro_complete = 0;
 global.password_shown = 0;
+global.start_time = -1;
 
 background.image = Image("frames/0.png").Scale(Window.GetWidth(), Window.GetHeight());
 background.sprite = Sprite(background.image);
@@ -16,7 +18,7 @@ fun finish_intro() {
   if (global.intro_complete == 1) return;
 
   global.intro_complete = 1;
-  global.frame_index = global.frame_count;
+  global.frame_index = global.frame_count - 1;
   background.image = Image("frames/" + (global.frame_count - 1) + ".png").Scale(Window.GetWidth(), Window.GetHeight());
   background.sprite.SetImage(background.image);
 }
@@ -24,16 +26,30 @@ fun finish_intro() {
 fun refresh_callback() {
   if (global.intro_complete == 1) return;
 
-  if (global.frame_index < global.frame_count) {
-    background.image = Image("frames/" + global.frame_index + ".png").Scale(Window.GetWidth(), Window.GetHeight());
-    background.sprite.SetImage(background.image);
-    global.frame_index++;
-  } else {
+  if (global.start_time < 0) {
+    global.start_time = Plymouth.GetTime();
+  }
+
+  elapsed = Plymouth.GetTime() - global.start_time;
+  if (elapsed < 0) elapsed = 0;
+
+  if (elapsed >= global.duration) {
     finish_intro();
+    return;
+  }
+
+  frame = Math.Int(elapsed * global.frame_count / global.duration);
+  if (frame < 0) frame = 0;
+  if (frame >= global.frame_count) frame = global.frame_count - 1;
+
+  if (frame != global.frame_index) {
+    background.image = Image("frames/" + frame + ".png").Scale(Window.GetWidth(), Window.GetHeight());
+    background.sprite.SetImage(background.image);
+    global.frame_index = frame;
   }
 }
 
-Plymouth.SetRefreshRate(@FPS@);
+Plymouth.SetRefreshRate(30);
 Plymouth.SetRefreshFunction(refresh_callback);
 
 lock.image = Image("lock.png");

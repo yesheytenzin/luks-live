@@ -3,25 +3,23 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: prepare.sh <video> <duration-ms> <fps> <width> <height> <entry-x-milli> <entry-y-milli> <audio:0|1> <volume-percent>" >&2
+  echo "Usage: prepare.sh <video> <duration-ms> <width> <height> <entry-x-milli> <entry-y-milli> <audio:0|1> <volume-percent>" >&2
   exit 2
 }
 
-(( $# == 9 )) || usage
+(( $# == 8 )) || usage
 
 source_video=$1
 duration_ms=$2
-fps=$3
-width=$4
-height=$5
-entry_x_milli=$6
-entry_y_milli=$7
-audio_requested=$8
-volume_percent=$9
+width=$3
+height=$4
+entry_x_milli=$5
+entry_y_milli=$6
+audio_requested=$7
+volume_percent=$8
 
 [[ -f $source_video && ! -L $source_video ]] || { echo "Video is not a regular file: $source_video" >&2; exit 1; }
 [[ $duration_ms =~ ^[0-9]+$ ]] && (( duration_ms >= 1000 && duration_ms <= 10000 )) || { echo "Duration must be 1000-10000 ms" >&2; exit 1; }
-[[ $fps =~ ^[0-9]+$ ]] && (( fps >= 8 && fps <= 20 )) || { echo "FPS must be 8-20" >&2; exit 1; }
 [[ $width =~ ^[0-9]+$ ]] && (( width >= 640 && width <= 1920 )) || { echo "Width must be 640-1920" >&2; exit 1; }
 [[ $height =~ ^[0-9]+$ ]] && (( height >= 360 && height <= 1080 )) || { echo "Height must be 360-1080" >&2; exit 1; }
 [[ $entry_x_milli =~ ^[0-9]+$ ]] && (( entry_x_milli <= 1000 )) || { echo "Entry X must be 0-1000" >&2; exit 1; }
@@ -48,6 +46,10 @@ rm -rf -- "$staging_dir"
 mkdir -p "$staging_dir/frames"
 
 duration_seconds=$(awk -v ms="$duration_ms" 'BEGIN { printf "%.3f", ms / 1000 }')
+
+# Fixed extraction FPS - duration based, no FPS logic. 20fps gives smooth playback
+# and stays within 200 frame limit (10s*20=200).
+fps=20
 
 ffmpeg -hide_banner -loglevel error -y -i "$source_video" \
   -t "$duration_seconds" \
