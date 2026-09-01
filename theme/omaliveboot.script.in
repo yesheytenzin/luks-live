@@ -4,11 +4,9 @@ Window.SetBackgroundTopColor(0, 0, 0);
 Window.SetBackgroundBottomColor(0, 0, 0);
 
 global.frame_count = @FRAME_COUNT@;
-global.fps = @FPS@;
-global.frame_index = 0;
+global.frame_index = 1;
 global.intro_complete = 0;
 global.password_shown = 0;
-global.start_time = Plymouth.GetTime();
 
 background.image = Image("frames/0.png").Scale(Window.GetWidth(), Window.GetHeight());
 background.sprite = Sprite(background.image);
@@ -18,7 +16,7 @@ fun finish_intro() {
   if (global.intro_complete == 1) return;
 
   global.intro_complete = 1;
-  global.frame_index = global.frame_count - 1;
+  global.frame_index = global.frame_count;
   background.image = Image("frames/" + (global.frame_count - 1) + ".png").Scale(Window.GetWidth(), Window.GetHeight());
   background.sprite.SetImage(background.image);
 }
@@ -26,20 +24,12 @@ fun finish_intro() {
 fun refresh_callback() {
   if (global.intro_complete == 1) return;
 
-  elapsed = Plymouth.GetTime() - global.start_time;
-  # Clamp elapsed to avoid negative on clock skew
-  if (elapsed < 0) elapsed = 0;
-
-  frame = Math.Int(elapsed * global.fps);
-  if (frame >= global.frame_count) {
-    finish_intro();
-    return;
-  }
-  if (frame < 0) frame = 0;
-  if (frame != global.frame_index) {
-    background.image = Image("frames/" + frame + ".png").Scale(Window.GetWidth(), Window.GetHeight());
+  if (global.frame_index < global.frame_count) {
+    background.image = Image("frames/" + global.frame_index + ".png").Scale(Window.GetWidth(), Window.GetHeight());
     background.sprite.SetImage(background.image);
-    global.frame_index = frame;
+    global.frame_index++;
+  } else {
+    finish_intro();
   }
 }
 
