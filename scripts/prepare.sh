@@ -4,19 +4,32 @@ set -euo pipefail
 
 usage() {
   echo "Usage: prepare.sh <video> <duration-ms> <width> <height> <entry-x-milli> <entry-y-milli> <audio:0|1> <volume-percent>" >&2
+  echo "       prepare.sh <video> <duration-ms> <fps> <width> <height> <entry-x-milli> <entry-y-milli> <audio:0|1> <volume-percent>  (fps ignored, for backwards compat)" >&2
   exit 2
 }
 
-(( $# == 8 )) || usage
-
-source_video=$1
-duration_ms=$2
-width=$3
-height=$4
-entry_x_milli=$5
-entry_y_milli=$6
-audio_requested=$7
-volume_percent=$8
+if (( $# == 8 )); then
+  source_video=$1
+  duration_ms=$2
+  width=$3
+  height=$4
+  entry_x_milli=$5
+  entry_y_milli=$6
+  audio_requested=$7
+  volume_percent=$8
+elif (( $# == 9 )); then
+  # backwards compat: old call included <fps> as $3, ignore it (fps is fixed 20)
+  source_video=$1
+  duration_ms=$2
+  width=$4
+  height=$5
+  entry_x_milli=$6
+  entry_y_milli=$7
+  audio_requested=$8
+  volume_percent=$9
+else
+  usage
+fi
 
 [[ -f $source_video && ! -L $source_video ]] || { echo "Video is not a regular file: $source_video" >&2; exit 1; }
 [[ $duration_ms =~ ^[0-9]+$ ]] && (( duration_ms >= 1000 && duration_ms <= 10000 )) || { echo "Duration must be 1000-10000 ms" >&2; exit 1; }
