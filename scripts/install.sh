@@ -55,7 +55,7 @@ validate_prepared() {
   audio=$(metadata_value AUDIO_ENABLED "$metadata")
   device=$(metadata_value AUDIO_DEVICE "$metadata")
 
-  [[ $frame_count =~ ^[0-9]+$ ]] && (( frame_count >= 1 && frame_count <= 100 ))
+  [[ $frame_count =~ ^[0-9]+$ ]] && (( frame_count >= 1 && frame_count <= 200 ))
   [[ $fps =~ ^[0-9]+$ ]] && (( fps >= 8 && fps <= 20 ))
   [[ $duration =~ ^[0-9]+\.[0-9]{3}$ ]]
   [[ $width =~ ^[0-9]+$ ]] && (( width >= 640 && width <= 1920 ))
