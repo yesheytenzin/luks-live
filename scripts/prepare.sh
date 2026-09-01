@@ -72,7 +72,20 @@ ffmpeg -hide_banner -loglevel error -y -i "$source_video" \
 shopt -s nullglob
 frames=("$staging_dir"/frames/*.png)
 frame_count=${#frames[@]}
-(( frame_count > 0 && frame_count <= 200 )) || { echo "Frame extraction produced an invalid frame count: $frame_count" >&2; exit 1; }
+(( frame_count > 0 )) || { echo "Frame extraction produced an invalid frame count: $frame_count" >&2; exit 1; }
+
+# Edge: source shorter than duration -> pad last frame to exactly duration*fps so boot holds last frame instead of stretching
+# Preview holds last frame until duration, so boot must do same for parity
+expected_frames=$(awk -v ms="$duration_ms" -v fps="$fps" 'BEGIN { printf "%d", int((ms*fps+999)/1000) }')
+if (( expected_frames > 200 )); then expected_frames=200; fi
+if (( frame_count < expected_frames )); then
+  last_frame="${frames[-1]}"
+  for ((i=frame_count; i<expected_frames; i++)); do
+    cp -- "$last_frame" "$staging_dir/frames/$i.png"
+  done
+  frame_count=$expected_frames
+fi
+(( frame_count <= 200 )) || { echo "Frame extraction produced an invalid frame count: $frame_count" >&2; exit 1; }
 
 intro_duration=$duration_seconds
 audio_enabled=0
