@@ -458,7 +458,7 @@ Panel {
         Button {
           id: revertButton
           text: "Revert"
-          enabled: !root.busy && root.installed
+          enabled: !root.busy
           bordered: true
           foreground: root.contentForeground
           onClicked: root.revert()
