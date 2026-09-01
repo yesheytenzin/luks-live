@@ -60,6 +60,20 @@ mkdir -p "$staging_dir/frames"
 
 duration_seconds=$(awk -v ms="$duration_ms" 'BEGIN { printf "%.3f", ms / 1000 }')
 
+# Constraint: boot length cannot exceed actual video length, so boot matches exactly and holds last frame correctly
+video_duration_raw=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$source_video" 2>/dev/null || true)
+if [[ -z $video_duration_raw || $video_duration_raw == "N/A" ]]; then
+  video_duration_raw=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=noprint_wrappers=1:nokey=1 "$source_video" 2>/dev/null || true)
+fi
+if [[ -n $video_duration_raw && $video_duration_raw != "N/A" ]]; then
+  video_duration_ms=$(awk -v d="$video_duration_raw" 'BEGIN { printf "%.0f", d*1000 }')
+  if [[ $video_duration_ms =~ ^[0-9]+$ ]] && (( video_duration_ms > 0 )) && (( duration_ms > video_duration_ms )); then
+    echo "Length cannot exceed video length: video is ${video_duration_ms} ms, requested ${duration_ms} ms" >&2
+    echo "Lower the Length or use a longer video." >&2
+    exit 1
+  fi
+fi
+
 # Fixed extraction FPS - duration based, no FPS logic. 20fps gives smooth playback
 # and stays within 200 frame limit (10s*20=200).
 fps=20

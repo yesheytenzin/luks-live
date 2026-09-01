@@ -22,12 +22,14 @@ Panel {
   readonly property string prepareScript: pluginDir + "/scripts/prepare.sh"
   readonly property string installScript: pluginDir + "/scripts/install.sh"
   readonly property string statusScript: pluginDir + "/scripts/status.sh"
+  readonly property string getDurationScript: pluginDir + "/scripts/get-duration.sh"
   readonly property string preparedDir: (Quickshell.env("XDG_CACHE_HOME") || home + "/.cache") + "/omaliveboot/prepared"
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
 
   property string videoPath: String(setting("videoPath", ""))
   property int durationMs: Number(setting("durationMs", 2500))
+  property int videoDurationMs: 0
   property bool soundEnabled: setting("soundEnabled", false) === true
   property int volumePercent: Number(setting("volumePercent", 70))
   property int entryXMilli: Number(setting("entryXMilli", 500))
@@ -75,6 +77,21 @@ Panel {
     videoPath = path
     persist({ videoPath: path })
     preview.replay()
+    probeDuration(path)
+  }
+
+  function probeDuration(path) {
+    if (!path || durationProc.running) return
+    durationProc.command = [getDurationScript, path]
+    durationProc.running = true
+  }
+
+  onVideoPathChanged: {
+    if (videoPath !== "" && assetFiles.indexOf(videoPath) >= 0) {
+      Qt.callLater(function() { probeDuration(videoPath) })
+    } else if (videoPath === "") {
+      videoDurationMs = 0
+    }
   }
 
   function assetName(path) {
@@ -95,6 +112,10 @@ Panel {
   function apply() {
     if (videoPath === "" || assetFiles.indexOf(videoPath) < 0) {
       logText = "Select a video from the assets folder before applying."
+      return
+    }
+    if (videoDurationMs > 0 && durationMs > videoDurationMs) {
+      logText = "Length cannot exceed video length (" + videoDurationMs + " ms). Lower the Length or use a longer video."
       return
     }
     busy = true
@@ -128,6 +149,29 @@ Panel {
           root.persist({ videoPath: root.videoPath })
         }
         if (root.videoPath !== "") preview.replay()
+      }
+    }
+  }
+
+  Process {
+    id: durationProc
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        var raw = String(text || "").trim()
+        var ms = parseInt(raw, 10)
+        if (!isNaN(ms) && ms > 0) {
+          root.videoDurationMs = ms
+          if (root.durationMs > ms) {
+            root.durationMs = Math.max(1000, Math.min(ms, 10000))
+            // clamp to 250 step
+            root.durationMs = Math.round(root.durationMs / 250) * 250
+            root.persist({ durationMs: root.durationMs })
+            preview.replay()
+          }
+        } else {
+          root.videoDurationMs = 0
+        }
       }
     }
   }
@@ -362,14 +406,24 @@ Panel {
             label: "Length (ms)"
             value: root.durationMs
             from: 1000
-            to: 10000
+            to: root.videoDurationMs > 0 ? Math.min(10000, root.videoDurationMs) : 10000
             stepSize: 250
             foreground: root.contentForeground
             onModified: function(value) {
+              if (root.videoDurationMs > 0 && value > root.videoDurationMs) value = root.videoDurationMs
               root.durationMs = value
               root.persist({ durationMs: value })
               preview.replay()
             }
+          }
+          Text {
+            width: parent.width
+            visible: root.videoPath !== "" 
+            text: root.videoDurationMs > 0 ? "Video length: " + root.videoDurationMs + " ms — Length capped to video length, boot will match exactly." : "Detecting video length..."
+            color: root.videoDurationMs > 0 && root.durationMs > root.videoDurationMs ? "#f7768e" : Qt.darker(root.contentForeground, 1.45)
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
           }
           Toggle {
             width: parent.width
