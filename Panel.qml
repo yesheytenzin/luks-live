@@ -22,14 +22,12 @@ Panel {
   readonly property string prepareScript: pluginDir + "/scripts/prepare.sh"
   readonly property string installScript: pluginDir + "/scripts/install.sh"
   readonly property string statusScript: pluginDir + "/scripts/status.sh"
-  readonly property string getFpsScript: pluginDir + "/scripts/get-fps.sh"
   readonly property string preparedDir: (Quickshell.env("XDG_CACHE_HOME") || home + "/.cache") + "/omaliveboot/prepared"
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
 
   property string videoPath: String(setting("videoPath", ""))
   property int durationMs: Number(setting("durationMs", 2500))
-  property int frameRate: Number(setting("frameRate", 12))
   property bool soundEnabled: setting("soundEnabled", false) === true
   property int volumePercent: Number(setting("volumePercent", 70))
   property int entryXMilli: Number(setting("entryXMilli", 500))
@@ -77,19 +75,6 @@ Panel {
     videoPath = path
     persist({ videoPath: path })
     preview.replay()
-    probeFps(path)
-  }
-
-  function probeFps(path) {
-    if (!path || fpsProc.running) return
-    fpsProc.command = [getFpsScript, path]
-    fpsProc.running = true
-  }
-
-  onVideoPathChanged: {
-    if (videoPath !== "" && assetFiles.indexOf(videoPath) >= 0) {
-      Qt.callLater(function() { probeFps(videoPath) })
-    }
   }
 
   function assetName(path) {
@@ -115,7 +100,7 @@ Panel {
     busy = true
     phase = "preparing"
     logText = "Extracting optimized Plymouth frames" + (soundEnabled ? " and PCM sound" : "") + "..."
-    prepareProc.command = [prepareScript, videoPath, String(durationMs), String(frameRate), "1280", "720",
+    prepareProc.command = [prepareScript, videoPath, String(durationMs), "1280", "720",
                            String(entryXMilli), String(entryYMilli), soundEnabled ? "1" : "0", String(volumePercent)]
     prepareProc.running = true
   }
@@ -143,21 +128,6 @@ Panel {
           root.persist({ videoPath: root.videoPath })
         }
         if (root.videoPath !== "") preview.replay()
-      }
-    }
-  }
-
-  Process {
-    id: fpsProc
-    stdout: StdioCollector {
-      waitForEnd: true
-      onStreamFinished: {
-        var raw = String(text || "").trim()
-        var fps = parseInt(raw, 10)
-        if (!isNaN(fps) && fps >= 8 && fps <= 20 && fps !== root.frameRate) {
-          root.frameRate = fps
-          root.persist({ frameRate: fps })
-        }
       }
     }
   }
@@ -401,14 +371,6 @@ Panel {
               preview.replay()
             }
           }
-          Text {
-            width: parent.width
-            text: root.videoPath === "" ? "FPS: auto (from video)" : "FPS: " + root.frameRate + " (auto from video)"
-            color: Qt.darker(root.contentForeground, 1.45)
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-
           Toggle {
             width: parent.width
             label: "Boot sound"
