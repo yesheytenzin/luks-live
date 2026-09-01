@@ -22,7 +22,7 @@ mkinitcpio encryption hook remains responsible for unlocking the disk.
 ## Features
 
 - Live video and sound preview in the Quattro panel
-- Plugin-owned `assets/` library for all imported live wallpapers
+- Plugin-owned `assets/` library for manually managed live wallpapers
 - One-shot playback that freezes on the last generated frame
 - Real Omarchy lock, entry, bullet, and progress assets in preview and Plymouth
 - Configurable 1-5 second length and 8-20 FPS
@@ -38,15 +38,15 @@ mkinitcpio encryption hook remains responsible for unlocking the disk.
 omarchy plugin add https://github.com/yesheytenzin/luks-live.git --enable
 ```
 
-The `LUKS` widget appears in the right bar section. Open it, choose a short
-video, replay the final-frame transition until it looks right, and select
-**Apply to next boot**. Polkit requests administrator authorization before
-system files or the UKI are changed.
+The `LUKS` widget appears in the right bar section. Open it, select **Open
+assets**, manually add a short video to that folder, and select **Refresh**.
+Choose the discovered clip, replay the final-frame transition until it looks
+right, and select **Apply to next boot**. Polkit requests administrator
+authorization before system files or the UKI are changed.
 
-Every video selected in the UI is copied into the plugin's `assets/` folder.
-Use **Open assets** to browse that folder or add supported video files there
-manually. Personal videos are ignored by Git; only `assets/README.md` is
-tracked.
+The UI does not upload, import, move, or copy videos. It only lists supported
+files already present in the plugin's `assets/` folder. Personal videos are
+ignored by Git; only `assets/README.md` is tracked.
 
 The plugin expects the standard Omarchy packages, including `plymouth`,
 `mkinitcpio`, `ffmpeg`, and `alsa-utils`. Sound currently targets the first
