@@ -27,8 +27,10 @@ run_hook() {
     audio_pid=$!
   fi
 
-  # Time-based plymouth animation needs an exact gate; handle fractional
-  # seconds portably (busybox ash may not support 8.600).
+  # Theme animation is wall-clock based (Plymouth.GetTime). This hook
+  # is the matching wall-clock gate: hold LUKS until INTRO_DURATION has
+  # elapsed since plymouth became ready, so preview and boot share the
+  # same timer.
   if ! sleep "${INTRO_DURATION}" 2>/dev/null; then
     _int=${INTRO_DURATION%%.*}
     _frac=${INTRO_DURATION#*.}
@@ -38,10 +40,15 @@ run_hook() {
       case ${#_frac} in 1) _frac="${_frac}00";; 2) _frac="${_frac}0";; esac
       if command -v usleep >/dev/null 2>&1; then
         usleep $((_frac * 1000)) 2>/dev/null || true
+      elif command -v python3 >/dev/null 2>&1; then
+        python3 -c "import time; time.sleep(${_frac}/1000.0)" 2>/dev/null || sleep 0.1 2>/dev/null || true
       else
         _ms=${_frac}
         while [ "${_ms}" -ge 100 ]; do sleep 0.1 2>/dev/null || break; _ms=$((_ms - 100)); done
-        [ "${_ms}" -eq 0 ] 2>/dev/null || sleep 0.1 2>/dev/null || true
+        if [ "${_ms}" -gt 0 ] 2>/dev/null; then
+          if [ "${_ms}" -ge 50 ]; then sleep 0.05 2>/dev/null || sleep 0.1 2>/dev/null || true
+          else sleep 0.02 2>/dev/null || sleep 0.1 2>/dev/null || true; fi
+        fi
       fi
     fi
   fi
