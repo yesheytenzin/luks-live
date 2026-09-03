@@ -30,30 +30,45 @@ Rectangle {
     player.position = 0
     player.play()
     if (targetEnd > 0) durationTimer.restart()
+    else entryVisible = true
   }
 
   function finishIntro() {
     if (entryVisible) return
     durationTimer.stop()
     player.pause()
-    if (player.seekable && targetEnd > 1 && player.duration > 0 && targetEnd <= player.duration) player.position = targetEnd - 1
-    else if (player.seekable && player.duration > 0) player.position = Math.min(player.duration - 1, targetEnd - 1)
+    if (player.seekable && player.duration > 0 && targetEnd > 0) {
+      var seekPos = Math.min(player.duration - 1, targetEnd - 1)
+      if (seekPos < 0) seekPos = 0
+      player.position = seekPos
+    }
     entryVisible = true
     introFinished()
+  }
+
+  onIntroDurationMsChanged: {
+    if (active && videoPath !== "" && !entryVisible && !playbackFailed) {
+      durationTimer.stop()
+      if (targetEnd > 0) durationTimer.restart()
+    }
   }
 
   onVideoPathChanged: {
     frameReady = false
     entryVisible = false
     playbackFailed = false
+    durationTimer.stop()
     player.stop()
     player.source = videoPath === "" ? "" : Util.fileUrl(videoPath)
-    if (active && videoPath !== "") player.play()
+    if (active && videoPath !== "") {
+      player.play()
+      if (targetEnd > 0) durationTimer.restart()
+    }
   }
 
   onActiveChanged: {
     if (!active) { player.pause(); durationTimer.stop() }
-    else if (videoPath !== "" && !entryVisible) { player.play(); if (targetEnd>0) durationTimer.restart() }
+    else if (videoPath !== "" && !entryVisible && !playbackFailed) { player.play(); if (targetEnd>0) durationTimer.restart() }
   }
 
   implicitHeight: Math.round(width * 9 / 16)
@@ -78,23 +93,21 @@ Rectangle {
     loops: MediaPlayer.Once
 
     onPositionChanged: {
-      if (!root.entryVisible && root.targetEnd > 0 && position >= root.targetEnd - 70)
+      if (!root.entryVisible && root.targetEnd > 0 && position >= root.targetEnd - 50)
         root.finishIntro()
     }
     onMediaStatusChanged: function(status) {
       if (status === MediaPlayer.EndOfMedia) {
-        // For short source (< duration) hold last frame until introDurationMs instead of finishing early
-        // Keep last frame visible and wait for targetEnd timer
-        if (root.targetEnd > player.duration + 100) {
-          if (player.seekable && player.duration > 0) player.position = player.duration - 1
+        if (root.targetEnd > 0 && player.duration > 0 && root.targetEnd > player.duration + 80) {
+          if (player.seekable) player.position = Math.max(0, player.duration - 1)
           player.pause()
-          // finish at targetEnd via timer, not immediately
         } else {
           root.finishIntro()
         }
-      } else if (status === MediaPlayer.InvalidMedia) {
+      } else if (status === MediaPlayer.InvalidMedia || status === MediaPlayer.NoMedia) {
         root.playbackFailed = true
         root.entryVisible = true
+        durationTimer.stop()
       }
     }
     onErrorOccurred: function(error, errorString) {
