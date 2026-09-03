@@ -27,10 +27,12 @@ run_hook() {
     audio_pid=$!
   fi
 
+  plymouth display-message --text="__luks_live_start__" >/dev/null 2>&1 || true
+
   # Theme animation is wall-clock based (Plymouth.GetTime). This hook
   # is the matching wall-clock gate: hold LUKS until INTRO_DURATION has
-  # elapsed since plymouth became ready, so preview and boot share the
-  # same timer.
+  # elapsed since the sentinel above resets the Plymouth timer, so
+  # preview and boot share the same start point.
   if ! sleep "${INTRO_DURATION}" 2>/dev/null; then
     _int=${INTRO_DURATION%%.*}
     _frac=${INTRO_DURATION#*.}

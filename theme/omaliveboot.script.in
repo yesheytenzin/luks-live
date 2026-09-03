@@ -8,7 +8,7 @@ global.intro_duration = @INTRO_DURATION@;
 global.fps = @FPS@;
 global.intro_complete = 0;
 global.password_shown = 0;
-global.start_time = Plymouth.GetTime();
+global.start_time = -1;
 global.last_frame = -1;
 
 background.image = Image("frames/0.png").Scale(Window.GetWidth(), Window.GetHeight());
@@ -25,6 +25,9 @@ fun finish_intro() {
 
 fun refresh_callback() {
   if (global.intro_complete == 1) return;
+
+  if (global.start_time < 0)
+    global.start_time = Plymouth.GetTime();
 
   elapsed = Plymouth.GetTime() - global.start_time;
 
@@ -143,11 +146,19 @@ message.sprite = Sprite();
 message.sprite.SetPosition(10, 10, 10003);
 
 fun display_message_callback(text) {
+  if (text == "__luks_live_start__") {
+    global.start_time = Plymouth.GetTime();
+    global.last_frame = -1;
+    global.intro_complete = 0;
+    message.sprite.SetOpacity(0);
+    return;
+  }
   message.sprite.SetImage(Image.Text(text, 1, 1, 1));
   message.sprite.SetOpacity(1);
 }
 
 fun hide_message_callback(text) {
+  if (text == "__luks_live_start__") return;
   message.sprite.SetOpacity(0);
 }
 
