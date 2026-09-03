@@ -74,13 +74,15 @@ if [[ -n $video_duration_raw && $video_duration_raw != "N/A" ]]; then
   fi
 fi
 
-# Fixed extraction FPS - duration based, no FPS logic. 20fps gives smooth playback
-# and stays within 200 frame limit (10s*20=200).
-fps=20
+# Adaptive FPS for smooth parity with preview. Maximise smoothness while
+# staying within 200 frame limit. Short intros get 30 fps, long intros scale down.
+max_frames=200
+max_fps=30
+fps=$(awk -v ms="$duration_ms" -v max="$max_frames" -v cap="$max_fps" 'BEGIN { f=int(max*1000/ms); if (f>cap) f=cap; if (f<20) f=20; print f }')
 
 ffmpeg -hide_banner -loglevel error -y -i "$source_video" \
   -t "$duration_seconds" \
-  -vf "fps=$fps,scale=$width:$height:force_original_aspect_ratio=increase,crop=$width:$height" \
+  -vf "fps=$fps:round=near,scale=$width:$height:flags=lanczos:force_original_aspect_ratio=increase,crop=$width:$height" \
   -start_number 0 "$staging_dir/frames/%d.png"
 
 shopt -s nullglob

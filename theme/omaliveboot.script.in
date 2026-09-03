@@ -44,7 +44,7 @@ fun refresh_callback() {
   }
 }
 
-Plymouth.SetRefreshRate(30);
+Plymouth.SetRefreshRate(60);
 Plymouth.SetRefreshFunction(refresh_callback);
 
 lock.image = Image("lock.png");
